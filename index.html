@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CLA - Recordatorios</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Recordatorios">
+  <meta name="theme-color" content="#7E22CE">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%237e22ce' rx='40'/><circle cx='90' cy='90' r='50' fill='white'/><path d='M70 90 L85 105 L110 75' stroke='%237e22ce' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: #f5f5f7;
+      overscroll-behavior: none;
+      transition: background-color 0.3s ease;
+    }
+    body.dark-mode {
+      background: #000000;
+    }
+    .ios-card {
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dark-mode .ios-card {
+      background: #1c1c1e;
+      box-shadow: 0 1px 3px rgba(255,255,255,0.05);
+    }
+    .text-primary {
+      color: #1d1d1f;
+      transition: color 0.3s ease;
+    }
+    .dark-mode .text-primary {
+      color: #ffffff;
+    }
+    .text-secondary {
+      color: #6e6e73;
+      transition: color 0.3s ease;
+    }
+    .dark-mode .text-secondary {
+      color: #98989d;
+    }
+    .text-tertiary {
+      color: #86868b;
+      transition: color 0.3s ease;
+    }
+    .dark-mode .text-tertiary {
+      color: #636366;
+    }
+    .modal-bg {
+      background: white;
+      transition: background-color 0.3s ease;
+    }
+    .dark-mode .modal-bg {
+      background: #1c1c1e;
+    }
+    .modal-border {
+      border-color: #e5e5e7;
+      transition: border-color 0.3s ease;
+    }
+    .dark-mode .modal-border {
+      border-color: #38383a;
+    }
+    .radio-checkbox {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #d1d1d6;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .radio-checkbox:hover {
+      border-color: #7E22CE;
+    }
+    .radio-checkbox.checked {
+      background-color: #7E22CE;
+      border-color: #7E22CE;
+    }
+    .radio-checkbox.checked::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      background-color: white;
+      border-radius: 50%;
+    }
+    .modal-backdrop {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .ios-input {
+      background: #f6f6f6;
+      border: none;
+      transition: background 0.2s;
+      color: #1d1d1f;
+    }
+    .dark-mode .ios-input {
+      background: #38383a;
+      color: #ffffff;
+    }
+    .ios-input:focus {
+      background: white;
+      box-shadow: 0 0 0 1px rgba(126,34,206,0.3);
+    }
+    .dark-mode .ios-input:focus {
+      background: #2c2c2e;
+    }
+    .ios-input::placeholder {
+      color: #86868b;
+    }
+    .dark-mode .ios-input::placeholder {
+      color: #636366;
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      to {
+        transform: translateX(150%);
+        opacity: 0;
+      }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .animate-slide-out {
+      animation: slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    /* Safe area para iPhone con notch */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .safe-area-top {
+      padding-top: max(16px, env(safe-area-inset-top));
+    }
+    .safe-area-bottom {
+      padding-bottom: max(32px, env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body class="pb-32 safe-area-bottom">
+  <div class="max-w-md mx-auto">
+    <!-- Header -->
+    <header class="px-5 pt-16 pb-4 safe-area-top">
+      <h1 class="text-4xl font-bold text-purple-700 tracking-tight">Recordatorios</h1>
+      <p class="text-secondary text-base mt-2" id="taskCount">0 pendientes</p>
+    </header>
+
+    <!-- Task List -->
+    <div class="px-4">
+      <div id="taskList" class="space-y-2">
+        <div class="text-center py-20 text-tertiary">
+          <svg class="w-20 h-20 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p class="text-base font-medium">Sin recordatorios</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Button -->
+  <button 
+    id="addTaskBtn"
+    class="fixed bottom-8 right-6 w-14 h-14 bg-purple-700 text-white rounded-full shadow-xl hover:bg-purple-800 transition-transform active:scale-95 flex items-center justify-center z-40"
+    style="box-shadow: 0 4px 12px rgba(126, 34, 206, 0.4); bottom: max(2rem, calc(2rem + env(safe-area-inset-bottom)));"
+  >
+    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+    </svg>
+  </button>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-40" id="modalBackdrop"></div>
+    <div class="absolute inset-0 flex items-end justify-center">
+      <div class="modal-bg rounded-t-3xl w-full max-w-md transform" id="modalContent" style="max-height: 85vh;">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b modal-border">
+          <button id="cancelBtn" class="text-purple-700 text-base font-semibold">Cancelar</button>
+          <h2 class="text-base font-semibold text-primary">Nueva Tarea</h2>
+          <button id="doneBtn" type="submit" form="taskForm" class="text-purple-700 text-base font-semibold">Añadir</button>
+        </div>
+
+        <!-- Modal Content -->
+        <form id="taskForm" class="p-5 space-y-4 overflow-y-auto" style="max-height: calc(85vh - 60px);">
+          <div>
+            <input 
+              type="text" 
+              id="taskTitle" 
+              placeholder="Título" 
+              required
+              class="ios-input w-full px-4 py-3 rounded-xl text-base focus:outline-none"
+            >
+          </div>
+          
+          <div>
+            <textarea 
+              id="taskDescription" 
+              placeholder="Notas" 
+              rows="4"
+              class="ios-input w-full px-4 py-3 rounded-xl text-base focus:outline-none resize-none"
+            ></textarea>
+          </div>
+          
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg fill="none" stroke="currentColor" class="w-5 h-5 text-white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/></svg>
+              </div>
+              <input 
+                type="date" 
+                id="taskDate"
+                class="ios-input flex-1 px-4 py-3 rounded-xl text-base focus:outline-none"
+              >
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg fill="none" stroke="currentColor" class="w-5 h-5 text-white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0"/></svg>
+              </div>
+              <input 
+                type="time" 
+                id="taskTime"
+                class="ios-input flex-1 px-4 py-3 rounded-xl text-base focus:outline-none"
+              >
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(function(registration) {
+        console.log('Service Worker registrado con éxito:', registration.scope);
+      }).catch(function(error) {
+        console.log('Error al registrar Service Worker:', error);
+      });
+    }
+
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    
+    // Detectar tema del sistema
+    let darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const modal = document.getElementById('modal');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalContent = document.getElementById('modalContent');
+    const taskForm = document.getElementById('taskForm');
+    let notificationCheckInterval;
+
+    // Aplicar tema
+    function applyTheme() {
+      if (darkMode) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
+
+    // Escuchar cambios en el tema del sistema en tiempo real
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        darkMode = e.matches;
+        applyTheme();
+      });
+    }
+
+    applyTheme();
+
+    // Solicitar permisos de notificación
+    async function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
+
+    // Verificar y enviar notificaciones
+    function checkNotifications() {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const now = new Date();
+        
+        tasks.forEach(task => {
+          if (!task.completed && task.date && !task.notified) {
+            const taskDateTime = new Date(task.date + (task.time ? 'T' + task.time : 'T00:00'));
+            
+            const timeDiff = taskDateTime - now;
+            if (timeDiff <= 60000 && timeDiff >= -60000) {
+              sendNotification(task);
+              task.notified = true;
+              saveTasks();
+            }
+          }
+        });
+      }
+    }
+
+    function sendNotification(task) {
+      const notification = new Notification('⏰ Recordatorio', {
+        body: task.title + (task.description ? '\n' + task.description : ''),
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%237e22ce"/><path d="M30 50 L45 65 L70 35" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%237e22ce"/></svg>',
+        tag: task.id,
+        requireInteraction: true,
+        vibrate: [200, 100, 200]
+      });
+
+      notification.onclick = function() {
+        window.focus();
+        notification.close();
+      };
+    }
+
+    function startNotificationCheck() {
+      checkNotifications();
+      notificationCheckInterval = setInterval(checkNotifications, 60000);
+    }
+
+    requestNotificationPermission().then(() => {
+      startNotificationCheck();
+    });
+
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      updateTaskCount();
+    }
+
+    function updateTaskCount() {
+      const pendingTasks = tasks.filter(t => !t.completed).length;
+      document.getElementById('taskCount').textContent = 
+        `${pendingTasks} ${pendingTasks === 1 ? 'pendiente' : 'pendientes'}`;
+    }
+
+    function formatDateTime(date, time) {
+      if (!date && !time) return '';
+      let result = '';
+      
+      if (date) {
+        const dateObj = new Date(date + 'T00:00');
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        if (dateObj.toDateString() === today.toDateString()) {
+          result = 'Hoy';
+        } else if (dateObj.toDateString() === tomorrow.toDateString()) {
+          result = 'Mañana';
+        } else {
+          result = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+      }
+      
+      if (time) {
+        result += (result ? ', ' : '') + time;
+      }
+      
+      return result;
+    }
+
+
+    function openModal() {
+      modal.classList.remove('hidden');
+      modalContent.classList.add('animate-slide-up');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Cerrar modal al hacer clic fuera (en el backdrop)
+    modalBackdrop.addEventListener('click', function (e) {
+      closeModal();
+    });
+
+    function closeModal() {
+      modalContent.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modalContent.style.transform = '';
+        modalContent.classList.remove('animate-slide-up');
+        taskForm.reset();
+        document.body.style.overflow = '';
+      }, 300);
+    }
+
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      const pendingTasks = tasks.filter(t => !t.completed);
+
+      if (pendingTasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="text-center py-20 text-tertiary">
+            <svg class="w-20 h-20 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-base font-medium">Sin recordatorios</p>
+          </div>
+        `;
+        return;
+      }
+
+      taskList.innerHTML = '';
+
+      pendingTasks.forEach((task) => {
+        const taskEl = document.createElement('div');
+        taskEl.className = 'ios-card rounded-2xl overflow-hidden mb-2';
+        taskEl.dataset.taskId = task.id;
+        
+        taskEl.innerHTML = `
+          <div class="flex items-center gap-4 p-4">
+            <div class="radio-checkbox flex-shrink-0" data-task-id="${task.id}"></div>
+            
+            <div class="flex-1 min-w-0">
+              <h3 class="font-normal text-primary text-base leading-snug mb-0.5">${task.title}</h3>
+              ${task.description ? `<p class="text-sm text-secondary leading-snug mb-1">${task.description}</p>` : ''}
+              ${task.date || task.time ? `
+                <div class="flex items-center gap-1.5 text-xs text-tertiary mt-1.5">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span>${formatDateTime(task.date, task.time)}</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        
+        taskList.appendChild(taskEl);
+        
+        const radioBtn = taskEl.querySelector('.radio-checkbox');
+        radioBtn.addEventListener('click', () => toggleTask(task.id, taskEl));
+      });
+    }
+
+    function toggleTask(id, taskEl) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = true;
+        task.completedAt = Date.now();
+        taskEl.classList.add('animate-slide-out');
+        
+        setTimeout(() => {
+          saveTasks();
+          renderTasks();
+        }, 300);
+      }
+    }
+
+    addTaskBtn.addEventListener('click', openModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', closeModal);
+
+    taskForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('taskTitle').value.trim();
+      if (!title) return;
+      
+      const description = document.getElementById('taskDescription').value.trim();
+      const date = document.getElementById('taskDate').value;
+      const time = document.getElementById('taskTime').value;
+      
+      tasks.push({
+        id: Date.now().toString(),
+        title,
+        description,
+        date,
+        time,
+        completed: false,
+        notified: false
+      });
+      
+      saveTasks();
+      renderTasks();
+      closeModal();
+    });
+
+    function initApp() {
+      renderTasks();
+      updateTaskCount();
+    }
+
+    function cleanOldCompletedTasks() {
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      tasks = tasks.filter(task => {
+        if (task.completed && task.completedAt && task.completedAt < sevenDaysAgo) {
+          return false;
+        }
+        return true;
+      });
+      saveTasks();
+    }
+
+    initApp();
+    cleanOldCompletedTasks();
+  </script>
+</body>
+</html>
