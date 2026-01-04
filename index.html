@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CLA - Recordatorios</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   
   <!-- PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,9 +15,6 @@
   
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%237e22ce' rx='40'/><circle cx='90' cy='90' r='50' fill='white'/><path d='M70 90 L85 105 L110 75' stroke='%237e22ce' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json">
   
   <style>
     * {
@@ -154,7 +150,6 @@
     .animate-slide-out {
       animation: slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
-    /* Safe area para iPhone con notch */
     body {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
@@ -169,13 +164,11 @@
 </head>
 <body class="pb-32 safe-area-bottom">
   <div class="max-w-md mx-auto">
-    <!-- Header -->
     <header class="px-5 pt-16 pb-4 safe-area-top">
       <h1 class="text-4xl font-bold text-purple-700 tracking-tight">Recordatorios</h1>
       <p class="text-secondary text-base mt-2" id="taskCount">0 pendientes</p>
     </header>
 
-    <!-- Task List -->
     <div class="px-4">
       <div id="taskList" class="space-y-2">
         <div class="text-center py-20 text-tertiary">
@@ -188,7 +181,6 @@
     </div>
   </div>
 
-  <!-- Floating Button -->
   <button 
     id="addTaskBtn"
     class="fixed bottom-8 right-6 w-14 h-14 bg-purple-700 text-white rounded-full shadow-xl hover:bg-purple-800 transition-transform active:scale-95 flex items-center justify-center z-40"
@@ -199,19 +191,16 @@
     </svg>
   </button>
 
-  <!-- Modal -->
   <div id="modal" class="fixed inset-0 z-50 hidden">
     <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-40" id="modalBackdrop"></div>
     <div class="absolute inset-0 flex items-end justify-center">
       <div class="modal-bg rounded-t-3xl w-full max-w-md transform" id="modalContent" style="max-height: 85vh;">
-        <!-- Modal Header -->
         <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b modal-border">
           <button id="cancelBtn" class="text-purple-700 text-base font-semibold">Cancelar</button>
           <h2 class="text-base font-semibold text-primary">Nueva Tarea</h2>
           <button id="doneBtn" type="submit" form="taskForm" class="text-purple-700 text-base font-semibold">Añadir</button>
         </div>
 
-        <!-- Modal Content -->
         <form id="taskForm" class="p-5 space-y-4 overflow-y-auto" style="max-height: calc(85vh - 60px);">
           <div>
             <input 
@@ -261,19 +250,9 @@
   </div>
 
   <script>
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then(function(registration) {
-        console.log('Service Worker registrado con éxito:', registration.scope);
-      }).catch(function(error) {
-        console.log('Error al registrar Service Worker:', error);
-      });
-    }
-
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    
-    // Detectar tema del sistema
+    let tasks = [];
     let darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let notificationCheckInterval;
     
     const modal = document.getElementById('modal');
     const addTaskBtn = document.getElementById('addTaskBtn');
@@ -281,9 +260,7 @@
     const modalBackdrop = document.getElementById('modalBackdrop');
     const modalContent = document.getElementById('modalContent');
     const taskForm = document.getElementById('taskForm');
-    let notificationCheckInterval;
 
-    // Aplicar tema
     function applyTheme() {
       if (darkMode) {
         document.body.classList.add('dark-mode');
@@ -292,7 +269,6 @@
       }
     }
 
-    // Escuchar cambios en el tema del sistema en tiempo real
     if (window.matchMedia) {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         darkMode = e.matches;
@@ -302,14 +278,14 @@
 
     applyTheme();
 
-    // Solicitar permisos de notificación
     async function requestNotificationPermission() {
       if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
       }
+      return Notification.permission === 'granted';
     }
 
-    // Verificar y enviar notificaciones
     function checkNotifications() {
       if ('Notification' in window && Notification.permission === 'granted') {
         const now = new Date();
@@ -317,9 +293,9 @@
         tasks.forEach(task => {
           if (!task.completed && task.date && !task.notified) {
             const taskDateTime = new Date(task.date + (task.time ? 'T' + task.time : 'T00:00'));
-            
             const timeDiff = taskDateTime - now;
-            if (timeDiff <= 60000 && timeDiff >= -60000) {
+            
+            if (timeDiff <= 0 && timeDiff >= -60000) {
               sendNotification(task);
               task.notified = true;
               saveTasks();
@@ -333,7 +309,6 @@
       const notification = new Notification('⏰ Recordatorio', {
         body: task.title + (task.description ? '\n' + task.description : ''),
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%237e22ce"/><path d="M30 50 L45 65 L70 35" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-        badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%237e22ce"/></svg>',
         tag: task.id,
         requireInteraction: true,
         vibrate: [200, 100, 200]
@@ -347,16 +322,50 @@
 
     function startNotificationCheck() {
       checkNotifications();
-      notificationCheckInterval = setInterval(checkNotifications, 60000);
+      notificationCheckInterval = setInterval(checkNotifications, 30000);
     }
 
-    requestNotificationPermission().then(() => {
-      startNotificationCheck();
+    async function promptForNotifications() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        const userWantsNotifications = confirm('¿Quieres recibir notificaciones cuando sea la fecha y hora de tus recordatorios?');
+        
+        if (userWantsNotifications) {
+          const granted = await requestNotificationPermission();
+          if (granted) {
+            startNotificationCheck();
+          }
+        }
+      } else if (Notification.permission === 'granted') {
+        startNotificationCheck();
+      }
+    }
+
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        promptForNotifications();
+      }, 1000);
     });
 
     function saveTasks() {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      updateTaskCount();
+      try {
+        const tasksData = JSON.stringify(tasks);
+        window.localStorage.setItem('tasks', tasksData);
+        updateTaskCount();
+      } catch (e) {
+        console.error('Error guardando tareas:', e);
+      }
+    }
+
+    function loadTasks() {
+      try {
+        const savedTasks = window.localStorage.getItem('tasks');
+        if (savedTasks) {
+          tasks = JSON.parse(savedTasks);
+        }
+      } catch (e) {
+        console.error('Error cargando tareas:', e);
+        tasks = [];
+      }
     }
 
     function updateTaskCount() {
@@ -391,17 +400,14 @@
       return result;
     }
 
-
     function openModal() {
       modal.classList.remove('hidden');
       modalContent.classList.add('animate-slide-up');
       document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        document.getElementById('taskTitle').focus();
+      }, 300);
     }
-
-    // Cerrar modal al hacer clic fuera (en el backdrop)
-    modalBackdrop.addEventListener('click', function (e) {
-      closeModal();
-    });
 
     function closeModal() {
       modalContent.style.transform = 'translateY(100%)';
@@ -506,11 +512,6 @@
       closeModal();
     });
 
-    function initApp() {
-      renderTasks();
-      updateTaskCount();
-    }
-
     function cleanOldCompletedTasks() {
       const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
       tasks = tasks.filter(task => {
@@ -522,8 +523,14 @@
       saveTasks();
     }
 
+    function initApp() {
+      loadTasks();
+      renderTasks();
+      updateTaskCount();
+      cleanOldCompletedTasks();
+    }
+
     initApp();
-    cleanOldCompletedTasks();
   </script>
 </body>
 </html>
